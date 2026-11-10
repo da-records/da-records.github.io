@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export const OFFICES = [
@@ -46,25 +46,33 @@ export async function createTravelOrders(draft: TravelOrderDraft) {
   const sequenceRef = doc(db, "travelOrderSequences", period);
   const recordRefs = draft.people.map(() => doc(collection(db, "travelOrders")));
   const groupId = draft.type === "group" ? crypto.randomUUID() : null;
-  const latestRecordQuery = query(
+  const monthlyRecordsQuery = query(
     collection(db, "travelOrders"),
     where("travelNo", ">=", `${period}-0001`),
     where("travelNo", "<=", `${period}-9999`),
-    orderBy("travelNo", "desc"),
-    limit(1),
   );
-  const latestRecords = await getDocs(latestRecordQuery);
-  const latestTravelNo = String(latestRecords.docs[0]?.data().travelNo ?? "");
-  const latestMatch = /^(\d{4})-(\d{4})$/.exec(latestTravelNo);
-  const recordLast = latestMatch?.[1] === period ? Number(latestMatch[2]) : 0;
+  const monthlyRecords = await getDocs(monthlyRecordsQuery);
+  const usedSequences = new Set<number>();
+  for (const record of monthlyRecords.docs) {
+    const match = /^(\d{4})-(\d{4})$/.exec(String(record.data().travelNo ?? ""));
+    if (match?.[1] === period) usedSequences.add(Number(match[2]));
+  }
 
   return runTransaction(db, async (transaction) => {
     const sequence = await transaction.get(sequenceRef);
     const savedLast = Number(sequence.data()?.lastSequence ?? 0);
-    const previousLast = Math.max(savedLast, recordLast);
-    const travelNumbers = draft.people.map((_, index) => `${period}-${String(previousLast + index + 1).padStart(4, "0")}`);
+    const existingLast = Math.max(0, ...usedSequences);
+    let lastSequence = sequence.exists() ? savedLast : existingLast;
+    const travelNumbers = draft.people.map(() => {
+      let nextSequence = lastSequence + 1;
+      while (usedSequences.has(nextSequence)) nextSequence += 1;
+      if (nextSequence > 9999) throw new Error(`The travel number sequence for ${period} is full.`);
+      usedSequences.add(nextSequence);
+      lastSequence = nextSequence;
+      return `${period}-${String(nextSequence).padStart(4, "0")}`;
+    });
 
-    transaction.set(sequenceRef, { lastSequence: previousLast + draft.people.length, updatedAt: serverTimestamp() });
+    transaction.set(sequenceRef, { lastSequence, updatedAt: serverTimestamp() });
     draft.people.forEach((person, index) => {
       transaction.set(recordRefs[index], {
         type: draft.type,
