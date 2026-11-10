@@ -23,7 +23,6 @@ import {
 } from "firebase/firestore";
 import { ArrowLeft, ArrowRight, Check, CircleAlert, LoaderCircle, LogOut, Pencil, Plus, ShieldCheck, X } from "lucide-react";
 import LoadingProgress from "@/components/LoadingProgress";
-import { useAccessCodeLogout } from "@/components/AccessCodeGate";
 import { auth, db, initializeAnalytics } from "@/lib/firebase";
 import { createTravelOrders, formatDate, OFFICES, orderFromDocument, type TravelOrder, type TravelOrderDraft } from "@/lib/records";
 
@@ -51,7 +50,6 @@ function errorMessage(error: unknown) {
 }
 
 export default function AdminPage() {
-  const logoutAccess = useAccessCodeLogout();
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -240,7 +238,7 @@ export default function AdminPage() {
 
   if (!user) return (
     <>
-      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public travel order records"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link><button className="header-link" type="button" title="Log out of records" aria-label="Log out of records" onClick={logoutAccess}><LogOut size={15} />Log out</button></header>
+      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public travel order records"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link></header>
       <main className="auth-layout">
         <section className="auth-main"><form className="auth-form" onSubmit={mode === "login" ? handleLogin : handleSignup}>
           <p className="eyebrow">Admin access</p><h2>{mode === "login" ? "Sign in" : "Create an account"}</h2><p className="auth-intro">{mode === "login" ? "Use your verified email to manage travel orders." : "Set up your verified account to access record management."}</p>
@@ -271,7 +269,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public register"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link><div className="admin-top-actions"><span className="header-note">{user.displayName || user.email}</span><button className="header-link" type="button" onClick={() => { void signOut(auth).catch(() => undefined).finally(logoutAccess); }}><LogOut size={15} />Sign out</button></div></header>
+      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public register"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link><div className="admin-top-actions"><span className="header-note">{user.displayName || user.email}</span><button className="header-link" type="button" onClick={() => void signOut(auth)}><LogOut size={15} />Sign out</button></div></header>
       <main className="page-shell">
         <section className="page-intro"><div><p className="eyebrow">Admin workspace</p><h1 className="page-title">Travel order records</h1><p className="page-subtitle">Create, update, and maintain the published register.</p></div><div className="intro-meta"><span className="status-dot" />Verified account</div></section>
         <div className="admin-toolbar"><span className="intro-meta">Changes publish to the public register</span><button className="button-primary" type="button" onClick={startCreate}><Plus size={17} />New travel order</button></div>

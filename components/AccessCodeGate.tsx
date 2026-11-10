@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { KeyRound, LockKeyhole } from "lucide-react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 const ACCESS_CODE = "caraga";
 const ACCESS_SESSION_KEY = "da-records-access-granted";
@@ -16,6 +18,8 @@ export function useAccessCodeLogout() {
 export default function AccessCodeGate({ children }: { children: ReactNode }) {
   const [accessReady, setAccessReady] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
+  const [accountReady, setAccountReady] = useState(false);
+  const [hasAccount, setHasAccount] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
 
@@ -25,9 +29,11 @@ export default function AccessCodeGate({ children }: { children: ReactNode }) {
     } catch {
       // The access gate still closes for this visit if storage is unavailable.
     }
+    void signOut(auth).catch(() => undefined);
     setCode("");
     setError("");
     setAccessGranted(false);
+    setHasAccount(false);
   }, []);
 
   useEffect(() => {
@@ -37,6 +43,10 @@ export default function AccessCodeGate({ children }: { children: ReactNode }) {
       setAccessGranted(false);
     }
     setAccessReady(true);
+    return onAuthStateChanged(auth, (user) => {
+      setHasAccount(Boolean(user));
+      setAccountReady(true);
+    });
   }, []);
 
   function submitAccessCode(event: FormEvent<HTMLFormElement>) {
@@ -55,7 +65,11 @@ export default function AccessCodeGate({ children }: { children: ReactNode }) {
     setAccessGranted(true);
   }
 
-  if (accessReady && accessGranted) {
+  if (!accessReady || !accountReady) {
+    return <div className="access-code-checking" role="status">Checking access...</div>;
+  }
+
+  if (hasAccount || accessGranted) {
     return <AccessCodeLogoutContext.Provider value={logout}>{children}</AccessCodeLogoutContext.Provider>;
   }
 
