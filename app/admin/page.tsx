@@ -24,7 +24,7 @@ import {
 import { ArrowLeft, ArrowRight, Check, CircleAlert, LoaderCircle, LogOut, Pencil, Plus, ShieldCheck, X } from "lucide-react";
 import LoadingProgress from "@/components/LoadingProgress";
 import { auth, db, initializeAnalytics } from "@/lib/firebase";
-import { createTravelOrders, formatDate, OFFICES, orderFromDocument, type TravelOrder, type TravelOrderDraft } from "@/lib/records";
+import { createTravelOrders, DIVISIONS, formatDate, getAdditionalOffices, OFFICES, orderFromDocument, SPECIAL_PROJECTS, type TravelOrder, type TravelOrderDraft } from "@/lib/records";
 
 const SUFFIXES = ["Jr.", "Sr.", "II", "III", "IV", "V", "VI"];
 const PAGE_SIZE = 15;
@@ -32,6 +32,26 @@ type Signup = { firstName: string; middleName: string; lastName: string; suffix:
 type RecordForm = TravelOrderDraft;
 const EMPTY_SIGNUP: Signup = { firstName: "", middleName: "", lastName: "", suffix: "", sexAtBirth: "", contactNo: "", email: "", password: "" };
 const EMPTY_RECORD: RecordForm = { type: "individual", people: [{ office: "", personnel: "" }], destination: "", toDate: "", dateFrom: "", dateTo: "" };
+const OTHER_OFFICE = "__other_office__";
+const LISTED_OFFICES = new Set<string>(OFFICES);
+
+function OfficeField({ id, value, onChange }: { id: string; value: string; onChange: (value: string) => void }) {
+  const isCustomOffice = value === OTHER_OFFICE || (value !== "" && !LISTED_OFFICES.has(value));
+  return (
+    <div className="field">
+      <label htmlFor={id}>Office</label>
+      {isCustomOffice ? <div className="office-custom-control">
+        <input id={id} className="field-input" required maxLength={140} placeholder="Enter office or project" value={value === OTHER_OFFICE ? "" : value} onChange={(event) => onChange(event.target.value)} />
+        <button className="text-button" type="button" onClick={() => onChange("")}>Choose from list</button>
+      </div> : <select id={id} className="field-select" required value={value} onChange={(event) => onChange(event.target.value)}>
+        <option value="">Select office</option>
+        <optgroup label="Divisions">{DIVISIONS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>
+        <optgroup label="Special projects">{SPECIAL_PROJECTS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>
+        <option value={OTHER_OFFICE}>Others</option>
+      </select>}
+    </div>
+  );
+}
 
 function errorMessage(error: unknown) {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
@@ -122,6 +142,7 @@ export default function AdminPage() {
   }, [user]);
 
   const filtered = useMemo(() => office === "all" ? records : records.filter((record) => record.office === office), [office, records]);
+  const additionalOffices = useMemo(() => getAdditionalOffices(records), [records]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const displayPage = Math.min(page, pageCount);
   const visible = filtered.slice((displayPage - 1) * PAGE_SIZE, displayPage * PAGE_SIZE);
@@ -192,7 +213,8 @@ export default function AdminPage() {
     try {
       if (editing) {
         const person = recordForm.people[0];
-        await updateDoc(doc(db, "travelOrders", editing.id), { type: editing.type, office: person.office, personnel: person.personnel.trim(), destination: recordForm.destination.trim(), ...(recordForm.toDate ? { toDate: recordForm.toDate } : {}), dateFrom: recordForm.dateFrom, dateTo: recordForm.dateTo, updatedAt: serverTimestamp() });
+        if (!person.office.trim()) throw new Error("Enter an office or special project for this person.");
+        await updateDoc(doc(db, "travelOrders", editing.id), { type: editing.type, office: person.office.trim(), personnel: person.personnel.trim(), destination: recordForm.destination.trim(), ...(recordForm.toDate ? { toDate: recordForm.toDate } : {}), dateFrom: recordForm.dateFrom, dateTo: recordForm.dateTo, updatedAt: serverTimestamp() });
         setRecordMessage(`${editing.travelNo} updated.`);
       } else {
         const travelNumbers = await createTravelOrders(recordForm);
@@ -275,7 +297,7 @@ export default function AdminPage() {
         <div className="admin-toolbar"><span className="intro-meta">Changes publish to the public register</span><button className="button-primary" type="button" onClick={startCreate}><Plus size={17} />New travel order</button></div>
         {recordMessage && <div className="notice notice-success" role="status"><Check size={17} />{recordMessage}<button className="text-button" type="button" aria-label="Dismiss message" onClick={() => setRecordMessage("")}><X size={15} /></button></div>}{recordsError && <div className="notice notice-error" role="alert"><CircleAlert size={17} />{recordsError}</div>}
         <section className="records-panel" aria-label="Manage travel order records">
-          <div className="panel-topline"><div><h2 className="panel-heading">Travel order register</h2><p className="panel-count">{filtered.length} {filtered.length === 1 ? "record" : "records"}</p></div><label className="filter-control"><span>Filter by office</span><span className="select-wrap"><select value={office} onChange={(event) => { setOffice(event.target.value); setPage(1); }} aria-label="Filter by office"><option value="all">All offices</option>{OFFICES.map((item) => <option key={item}>{item}</option>)}</select></span></label></div>
+          <div className="panel-topline"><div><h2 className="panel-heading">Travel order register</h2><p className="panel-count">{filtered.length} {filtered.length === 1 ? "record" : "records"}</p></div><label className="filter-control"><span>Filter by office</span><span className="select-wrap"><select value={office} onChange={(event) => { setOffice(event.target.value); setPage(1); }} aria-label="Filter by office"><option value="all">All offices</option><optgroup label="Divisions">{DIVISIONS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup><optgroup label="Special projects">{SPECIAL_PROJECTS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>{additionalOffices.length > 0 && <optgroup label="Other offices">{additionalOffices.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>}</select></span></label></div>
           <div className="table-scroll"><table className="records-table"><thead><tr><th rowSpan={2}>Office</th><th rowSpan={2}>Travel No.</th><th rowSpan={2}>Type</th><th rowSpan={2}>TO Date</th><th rowSpan={2}>Personnel</th><th rowSpan={2}>Destination</th><th colSpan={2}>Travel Dates</th><th rowSpan={2} className="action-cell">Actions</th></tr><tr><th>Date From</th><th>Date To</th></tr></thead><tbody>
             {recordsLoading ? <tr><td className="table-state" colSpan={9}>Loading travel orders...</td></tr> : visible.length ? visible.map((record) => <tr key={record.id}><td className="office-cell">{record.office}</td><td className="travel-number">{record.travelNo}</td><td>{record.type === "group" ? "Group" : "Individual"}</td><td className="date-cell">{formatDate(record.toDate)}</td><td className="personnel-cell">{record.personnel}</td><td className="destination-cell">{record.destination}</td><td className="date-cell">{formatDate(record.dateFrom)}</td><td className="date-cell">{formatDate(record.dateTo)}</td><td className="action-cell"><button className="icon-button" type="button" title="Edit record" aria-label={`Edit ${record.travelNo}`} onClick={() => startEdit(record)}><Pencil size={15} /></button><button className="icon-button danger" type="button" title="Delete record" aria-label={`Delete ${record.travelNo}`} onClick={() => void handleDelete(record)}><X size={15} /></button></td></tr>) : <tr><td className="table-state" colSpan={9}><strong>{records.length ? "No records for this office" : "No travel orders published yet"}</strong></td></tr>}
           </tbody></table></div>
@@ -290,7 +312,7 @@ export default function AdminPage() {
           <label className={`record-type-option${recordForm.type === "group" ? " is-selected" : ""}`}><input type="checkbox" checked={recordForm.type === "group"} disabled={Boolean(editing)} onChange={(event) => { if (event.target.checked) setTravelType("group"); }} /><span>Group</span></label>
         </div></fieldset><div className="field"><label htmlFor="toDate">TO Date</label><input id="toDate" className="field-input" type="date" required={!editing || Boolean(editing.toDate)} value={recordForm.toDate} onChange={(event) => setRecordForm({ ...recordForm, toDate: event.target.value })} /></div></div>
         {recordForm.type === "individual" && <div className="form-grid person-fields">
-          <div className="field"><label htmlFor="person-office">Office</label><select id="person-office" className="field-select" required value={recordForm.people[0]?.office ?? ""} onChange={(event) => updatePerson(0, "office", event.target.value)}><option value="">Select office</option>{OFFICES.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <OfficeField id="person-office" value={recordForm.people[0]?.office ?? ""} onChange={(value) => updatePerson(0, "office", value)} />
           <div className="field"><label htmlFor="person-name">Personnel</label><input id="person-name" className="field-input" required maxLength={140} value={recordForm.people[0]?.personnel ?? ""} onChange={(event) => updatePerson(0, "personnel", event.target.value)} /></div>
         </div>}
         {recordForm.type === "group" && <div className="group-trip-fields"><div className="field full"><label htmlFor="destination">Destination</label><input id="destination" className="field-input" required maxLength={180} value={recordForm.destination} onChange={(event) => setRecordForm({ ...recordForm, destination: event.target.value })} /></div>
@@ -301,7 +323,7 @@ export default function AdminPage() {
           <div className="group-people-heading"><div><strong>Personnel and office</strong><span>{editing ? "Editing this member's record" : `${recordForm.people.length} entries · each receives its own travel number`}</span></div>{!editing && <button className="button-quiet add-person-button" type="button" disabled={recordForm.people.length >= 100} onClick={() => setRecordForm({ ...recordForm, people: [...recordForm.people, { office: "", personnel: "" }] })}><Plus size={15} />Add person</button>}</div>
           <div className="group-people-list">{recordForm.people.map((person, index) => <div className="group-person-row" key={index}><span className="person-index">{String(index + 1).padStart(2, "0")}</span>
             <div className="field"><label htmlFor={`group-person-${index}`}>Personnel</label><input id={`group-person-${index}`} className="field-input" required maxLength={140} value={person.personnel} onChange={(event) => updatePerson(index, "personnel", event.target.value)} /></div>
-            <div className="field"><label htmlFor={`group-office-${index}`}>Office</label><select id={`group-office-${index}`} className="field-select" required value={person.office} onChange={(event) => updatePerson(index, "office", event.target.value)}><option value="">Select office</option>{OFFICES.map((item) => <option key={item}>{item}</option>)}</select></div>
+            <OfficeField id={`group-office-${index}`} value={person.office} onChange={(value) => updatePerson(index, "office", value)} />
             {!editing && <button className="icon-button danger remove-person-button" type="button" disabled={recordForm.people.length <= 2} title="Remove person" aria-label={`Remove person ${index + 1}`} onClick={() => setRecordForm({ ...recordForm, people: recordForm.people.filter((_, personIndex) => personIndex !== index) })}><X size={15} /></button>}
           </div>)}</div>
           {editing && <p className="form-hint">Changes apply to this personnel record only.</p>}

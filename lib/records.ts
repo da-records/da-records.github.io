@@ -1,9 +1,13 @@
 import { collection, doc, getDocs, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-export const OFFICES = [
+export const DIVISIONS = [
   "Administrative and Finance Division", "Agribusiness and Marketing Assistance Division", "Field Operations Division", "Finance Division", "Integrated Laboratories Division", "Planning, Monitoring and Evaluation Division", "Regional Agricultural Engineering Division", "Regional Executive Director", "Regulatory Division", "Research Division", "RTD for Operations", "RTD for Research and Regulations",
 ] as const;
+
+export const SPECIAL_PROJECTS = ["4K's", "AGRISTAT", "AMIA", "AOP", "Corn", "DRRM", "F2C2", "GAD", "MIADP", "NUPAP", "PRDP", "Rice", "RSBSA", "SAAD"] as const;
+
+export const OFFICES = [...DIVISIONS, ...SPECIAL_PROJECTS] as const;
 
 export interface TravelOrder {
   id: string;
@@ -35,6 +39,11 @@ export function orderFromDocument(id: string, value: Record<string, unknown>): T
   return { id, type: value.type === "group" ? "group" : "individual", office: String(value.office ?? ""), travelNo: String(value.travelNo ?? ""), personnel: String(value.personnel ?? ""), destination: String(value.destination ?? ""), toDate: String(value.toDate ?? ""), dateFrom: String(value.dateFrom ?? ""), dateTo: String(value.dateTo ?? "") };
 }
 
+export function getAdditionalOffices(records: TravelOrder[]) {
+  const listedOffices = new Set<string>(OFFICES);
+  return [...new Set(records.map((record) => record.office.trim()).filter((office) => office && !listedOffices.has(office)))].sort((first, second) => first.localeCompare(second, "en", { sensitivity: "base" }));
+}
+
 function currentTravelPeriod() {
   const parts = new Intl.DateTimeFormat("en-US", { month: "2-digit", year: "2-digit", timeZone: "Asia/Manila" }).formatToParts(new Date());
   return `${parts.find((part) => part.type === "month")?.value ?? "01"}${parts.find((part) => part.type === "year")?.value ?? "00"}`;
@@ -43,6 +52,7 @@ function currentTravelPeriod() {
 export async function createTravelOrders(draft: TravelOrderDraft) {
   if (!draft.people.length || draft.people.length > 100) throw new Error("A travel order must include between 1 and 100 personnel entries.");
   if (draft.type === "group" && draft.people.length < 2) throw new Error("A group travel order requires at least two personnel entries.");
+  if (draft.people.some((person) => !person.office.trim())) throw new Error("Enter an office or special project for each person.");
 
   const period = currentTravelPeriod();
   const sequenceRef = doc(db, "travelOrderSequences", period);
@@ -78,7 +88,7 @@ export async function createTravelOrders(draft: TravelOrderDraft) {
     draft.people.forEach((person, index) => {
       transaction.set(recordRefs[index], {
         type: draft.type,
-        office: person.office,
+        office: person.office.trim(),
         personnel: person.personnel.trim(),
         destination: draft.destination.trim(),
         toDate: draft.toDate,

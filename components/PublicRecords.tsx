@@ -8,7 +8,7 @@ import { ArrowLeft, ArrowRight, LogOut } from "lucide-react";
 import { useAccessCodeLogout } from "@/components/AccessCodeGate";
 import LoadingProgress from "@/components/LoadingProgress";
 import { db, initializeAnalytics } from "@/lib/firebase";
-import { formatDate, OFFICES, orderFromDocument, type TravelOrder } from "@/lib/records";
+import { DIVISIONS, formatDate, getAdditionalOffices, orderFromDocument, SPECIAL_PROJECTS, type TravelOrder } from "@/lib/records";
 
 const PAGE_SIZE = 10;
 
@@ -45,6 +45,7 @@ export default function PublicRecords() {
   }, []);
 
   const filtered = useMemo(() => office === "all" ? records : records.filter((record) => record.office === office), [office, records]);
+  const additionalOffices = useMemo(() => getAdditionalOffices(records), [records]);
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const displayPage = Math.min(page, pageCount);
   const visible = filtered.slice((displayPage - 1) * PAGE_SIZE, displayPage * PAGE_SIZE);
@@ -60,7 +61,7 @@ export default function PublicRecords() {
         <section className="page-intro"><div><p className="eyebrow">Department of Agriculture</p><h1 className="page-title">Travel order records</h1><p className="page-subtitle">Browse published travel orders by office and travel date.</p></div><div className="intro-meta"><span className="status-dot" />Live public register</div></section>
         {error && <div className="notice notice-error" role="alert">{error}</div>}
         <section className="records-panel" aria-label="Travel order records">
-          <div className="panel-topline"><div><h2 className="panel-heading">Travel order register</h2><p className="panel-count">{filtered.length} {filtered.length === 1 ? "record" : "records"}{office === "all" ? " in the register" : ` in ${office}`}</p></div><label className="filter-control"><span>Filter by office</span><span className="select-wrap"><select value={office} onChange={(event) => { setOffice(event.target.value); setPage(1); }} aria-label="Filter by office"><option value="all">All offices</option>{OFFICES.map((item) => <option key={item}>{item}</option>)}</select></span></label></div>
+          <div className="panel-topline"><div><h2 className="panel-heading">Travel order register</h2><p className="panel-count">{filtered.length} {filtered.length === 1 ? "record" : "records"}{office === "all" ? " in the register" : ` in ${office}`}</p></div><label className="filter-control"><span>Filter by office</span><span className="select-wrap"><select value={office} onChange={(event) => { setOffice(event.target.value); setPage(1); }} aria-label="Filter by office"><option value="all">All offices</option><optgroup label="Divisions">{DIVISIONS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup><optgroup label="Special projects">{SPECIAL_PROJECTS.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>{additionalOffices.length > 0 && <optgroup label="Other offices">{additionalOffices.map((item) => <option key={item} value={item}>{item}</option>)}</optgroup>}</select></span></label></div>
           <div className="table-scroll"><table className="records-table">
             <thead><tr><th rowSpan={2}>Office</th><th rowSpan={2}>Travel No.</th><th rowSpan={2}>Type</th><th rowSpan={2}>TO Date</th><th rowSpan={2}>Personnel</th><th rowSpan={2}>Destination</th><th colSpan={2}>Travel Dates</th></tr><tr><th>Date From</th><th>Date To</th></tr></thead>
             <tbody>{loading ? <tr><td className="table-state" colSpan={8}>Loading published travel orders...</td></tr> : visible.length ? visible.map((record) => <tr key={record.id}><td className="office-cell">{record.office}</td><td className="travel-number">{record.travelNo}</td><td>{record.type === "group" ? "Group" : "Individual"}</td><td className="date-cell">{formatDate(record.toDate)}</td><td className="personnel-cell">{record.personnel}</td><td className="destination-cell">{record.destination}</td><td className="date-cell">{formatDate(record.dateFrom)}</td><td className="date-cell">{formatDate(record.dateTo)}</td></tr>) : <tr><td className="table-state" colSpan={8}><strong>{records.length ? "No records for this office" : "No travel orders published yet"}</strong><span>{records.length ? "Choose another office to see its register." : "Newly published travel orders will appear here."}</span></td></tr>}</tbody>

@@ -9,13 +9,17 @@ service cloud.firestore {
       return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
 
+    function validOffice(value) {
+      return value is string && value.size() > 0 && value.size() <= 140 && value != '__other_office__';
+    }
+
     function validRecord(data) {
       return data.keys().hasAll(['type', 'office', 'travelNo', 'personnel', 'destination', 'dateFrom', 'dateTo', 'createdAt', 'updatedAt'])
         && data.keys().hasOnly(['type', 'office', 'travelNo', 'personnel', 'destination', 'toDate', 'dateFrom', 'dateTo', 'groupId', 'groupSize', 'createdAt', 'updatedAt'])
         && data.type in ['individual', 'group']
         && ((data.type == 'individual' && !data.keys().hasAny(['groupId', 'groupSize']))
           || (data.type == 'group' && data.keys().hasAll(['groupId', 'groupSize']) && data.groupId is string && data.groupId.size() > 0 && data.groupSize is int && data.groupSize >= 2 && data.groupSize <= 100))
-        && data.office in ['Administrative and Finance Division', 'Agribusiness and Marketing Assistance Division', 'Field Operations Division', 'Finance Division', 'Integrated Laboratories Division', 'Planning, Monitoring and Evaluation Division', 'Regional Agricultural Engineering Division', 'Regional Executive Director', 'Regulatory Division', 'Research Division', 'RTD for Operations', 'RTD for Research and Regulations']
+        && validOffice(data.office)
         && data.travelNo is string && data.travelNo.matches('^[0-9]{4}-[0-9]{4}$')
         && data.personnel is string && data.personnel.size() > 0 && data.personnel.size() <= 140
         && data.destination is string && data.destination.size() > 0 && data.destination.size() <= 180
