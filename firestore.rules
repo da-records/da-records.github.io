@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function verifiedAccount() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function validRecord(data) {
+      return data.keys().hasAll(['type', 'office', 'travelNo', 'personnel', 'destination', 'dateFrom', 'dateTo', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['type', 'office', 'travelNo', 'personnel', 'destination', 'dateFrom', 'dateTo', 'groupId', 'groupSize', 'createdAt', 'updatedAt'])
+        && data.type in ['individual', 'group']
+        && ((data.type == 'individual' && !data.keys().hasAny(['groupId', 'groupSize']))
+          || (data.type == 'group' && data.keys().hasAll(['groupId', 'groupSize']) && data.groupId is string && data.groupId.size() > 0 && data.groupSize is int && data.groupSize >= 2 && data.groupSize <= 100))
+        && data.office in ['Administrative and Finance Division', 'Agribusiness and Marketing Assistance Division', 'Field Operations Division', 'Finance Division', 'Integrated Laboratories Division', 'Planning, Monitoring and Evaluation Division', 'Regional Agricultural Engineering Division', 'Regional Executive Director', 'Regulatory Division', 'Research Division', 'RTD for Operations', 'RTD for Research and Regulations']
+        && data.travelNo is string && data.travelNo.matches('^[0-9]{4}-[0-9]{4}$')
+        && data.personnel is string && data.personnel.size() > 0 && data.personnel.size() <= 140
+        && data.destination is string && data.destination.size() > 0 && data.destination.size() <= 180
+        && data.dateFrom is string && data.dateFrom.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.dateTo is string && data.dateTo.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.createdAt is timestamp && data.updatedAt is timestamp;
+    }
+
+    match /travelOrders/{recordId} {
+      allow read: if true;
+      allow create: if verifiedAccount() && validRecord(request.resource.data);
+      allow update: if verifiedAccount()
+        && validRecord(request.resource.data)
+        && request.resource.data.travelNo == resource.data.travelNo
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if verifiedAccount();
+    }
+
+    match /travelOrderSequences/{period} {
+      allow read: if verifiedAccount();
+      allow create: if verifiedAccount()
+        && period.matches('^[0-9]{4}$')
+        && request.resource.data.keys().hasOnly(['lastSequence', 'updatedAt'])
+        && request.resource.data.lastSequence is int
+        && request.resource.data.lastSequence > 0
+        && request.resource.data.lastSequence <= 9999
+        && request.resource.data.updatedAt is timestamp;
+      allow update: if verifiedAccount()
+        && period.matches('^[0-9]{4}$')
+        && request.resource.data.keys().hasOnly(['lastSequence', 'updatedAt'])
+        && request.resource.data.lastSequence is int
+        && request.resource.data.lastSequence > resource.data.lastSequence
+        && request.resource.data.lastSequence <= 9999
+        && request.resource.data.updatedAt is timestamp;
+      allow delete: if false;
+    }
+
+    match /adminProfiles/{uid} {
+      allow create: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['firstName', 'middleName', 'lastName', 'suffix', 'sexAtBirth', 'contactNo', 'email', 'createdAt'])
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.sexAtBirth in ['Male', 'Female']
+        && request.resource.data.contactNo is string
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.createdAt is timestamp;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow update, delete: if false;
+    }
+  }
+}
