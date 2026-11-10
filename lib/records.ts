@@ -1,4 +1,4 @@
-import { collection, doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export const OFFICES = [
@@ -46,12 +46,22 @@ export async function createTravelOrders(draft: TravelOrderDraft) {
   const sequenceRef = doc(db, "travelOrderSequences", period);
   const recordRefs = draft.people.map(() => doc(collection(db, "travelOrders")));
   const groupId = draft.type === "group" ? crypto.randomUUID() : null;
+  const latestRecordQuery = query(
+    collection(db, "travelOrders"),
+    where("travelNo", ">=", `${period}-0001`),
+    where("travelNo", "<=", `${period}-9999`),
+    orderBy("travelNo", "desc"),
+    limit(1),
+  );
+  const latestRecords = await getDocs(latestRecordQuery);
+  const latestTravelNo = String(latestRecords.docs[0]?.data().travelNo ?? "");
+  const latestMatch = /^(\d{4})-(\d{4})$/.exec(latestTravelNo);
+  const recordLast = latestMatch?.[1] === period ? Number(latestMatch[2]) : 0;
 
   return runTransaction(db, async (transaction) => {
     const sequence = await transaction.get(sequenceRef);
     const savedLast = Number(sequence.data()?.lastSequence ?? 0);
-    const novemberBaseline = period === "1126" ? 713 : 0;
-    const previousLast = Math.max(savedLast, novemberBaseline);
+    const previousLast = Math.max(savedLast, recordLast);
     const travelNumbers = draft.people.map((_, index) => `${period}-${String(previousLast + index + 1).padStart(4, "0")}`);
 
     transaction.set(sequenceRef, { lastSequence: previousLast + draft.people.length, updatedAt: serverTimestamp() });

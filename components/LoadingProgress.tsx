@@ -32,7 +32,7 @@ export default function LoadingProgress({ loading }: { loading: boolean }) {
     <div className={`loading-progress-screen${fading ? " is-fading-out" : ""}`} role="status" aria-label="Loading travel order records">
       <div className="loading-progress-content">
         <div className="loading-progress-brand">
-          <Image className="loading-progress-image" src="/tor_logo.png" alt="Travel Order Records" width={490} height={180} priority />
+          <Image className="loading-progress-image" src="/tor_logo.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} />
           <span className="loading-progress-wording"><strong>DA <em>RECORDS</em></strong><small>CARAGA REGION</small></span>
         </div>
         <div className="loading-progress-value" role="progressbar" aria-label="Loading records" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}><span>{progress}</span><small>%</small></div>

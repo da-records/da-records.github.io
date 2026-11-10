@@ -20,7 +20,7 @@ Open `http://localhost:3000`. The Firebase web configuration supplied for projec
 
 Individual entries create one travel order. Group entries share a destination and travel dates but create one Firestore record and one travel number per person-office row. New groups require at least two people and are saved atomically.
 
-The latest existing travel number for November 2026 is `1126-0713`; the next new record receives `1126-0714`. Numbers use `MMYY-####` and are allocated in a Firestore transaction, with a separate counter for each month.
+Travel numbers use `MMYY-####`. The first record in each month receives `0001`; each subsequent person record, including each member of a group entry, receives the next number. Allocation runs in a Firestore transaction and checks both the monthly counter and the highest existing number for that month.
 
 ## GitHub Pages
 

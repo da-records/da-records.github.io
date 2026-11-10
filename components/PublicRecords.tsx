@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowLeft, ArrowRight, LockKeyhole } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import LoadingProgress from "@/components/LoadingProgress";
 import { db, initializeAnalytics } from "@/lib/firebase";
 import { formatDate, OFFICES, orderFromDocument, type TravelOrder } from "@/lib/records";
@@ -50,9 +50,8 @@ export default function PublicRecords() {
   return (
     <>
       <LoadingProgress loading={loading} />
-      <header className="site-header">
-        <Link className="brand-link" href="/" aria-label="Travel Order Records home"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority /></Link>
-        <div className="header-actions"><span className="header-note">Public register</span><Link className="header-link" href="/admin/"><LockKeyhole size={15} />Admin</Link></div>
+      <header className="site-header compact-header">
+        <Link className="brand-link" href="/" aria-label="Travel Order Records home"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link>
       </header>
       <main className="page-shell">
         <section className="page-intro"><div><p className="eyebrow">Department of Agriculture</p><h1 className="page-title">Travel order records</h1><p className="page-subtitle">Browse published travel orders by office and travel date.</p></div><div className="intro-meta"><span className="status-dot" />Live public register</div></section>

@@ -238,20 +238,23 @@ export default function AdminPage() {
 
   if (!user) return (
     <>
-      <header className="site-header"><Link className="brand-link" href="/" aria-label="Public travel order records"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority /></Link><Link className="header-link" href="/">Public register</Link></header>
+      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public travel order records"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link></header>
       <main className="auth-layout">
-        <aside className="auth-aside"><div><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} /><h1>Records, kept in order.</h1><p>Manage the public travel order register for your office.</p></div><div className="auth-aside-foot">DA Records · Admin</div></aside>
         <section className="auth-main"><form className="auth-form" onSubmit={mode === "login" ? handleLogin : handleSignup}>
           <p className="eyebrow">Admin access</p><h2>{mode === "login" ? "Sign in" : "Create an account"}</h2><p className="auth-intro">{mode === "login" ? "Use your verified email to manage travel orders." : "Set up your verified account to access record management."}</p>
           {authError && <div className="notice notice-error" role="alert"><CircleAlert size={17} />{authError}</div>}{authMessage && <div className="notice notice-success" role="status"><Check size={17} />{authMessage}</div>}
-          {mode === "signup" && <div className="form-grid">
+          {mode === "signup" && <>
+            <div className="signup-name-grid">
             <div className="field"><label htmlFor="firstName">First name</label><input id="firstName" className="field-input" autoComplete="given-name" required value={signup.firstName} onChange={(event) => setSignup({ ...signup, firstName: event.target.value })} /></div>
             <div className="field"><label htmlFor="middleName">Middle name</label><input id="middleName" className="field-input" autoComplete="additional-name" value={signup.middleName} onChange={(event) => setSignup({ ...signup, middleName: event.target.value })} /></div>
             <div className="field"><label htmlFor="lastName">Last name</label><input id="lastName" className="field-input" autoComplete="family-name" required value={signup.lastName} onChange={(event) => setSignup({ ...signup, lastName: event.target.value })} /></div>
             <div className="field"><label htmlFor="suffix">Suffix</label><select id="suffix" className="field-select" value={signup.suffix} onChange={(event) => setSignup({ ...signup, suffix: event.target.value })}><option value="">None</option>{SUFFIXES.map((item) => <option key={item}>{item}</option>)}</select></div>
+            </div>
+            <div className="form-grid signup-personal-grid">
             <div className="field"><label htmlFor="sexAtBirth">Sex at birth</label><select id="sexAtBirth" className="field-select" required value={signup.sexAtBirth} onChange={(event) => setSignup({ ...signup, sexAtBirth: event.target.value })}><option value="">Select</option><option>Male</option><option>Female</option></select></div>
             <div className="field"><label htmlFor="contactNo">Contact no.</label><input id="contactNo" className="field-input" type="tel" autoComplete="tel" required value={signup.contactNo} onChange={(event) => setSignup({ ...signup, contactNo: event.target.value })} /></div>
-          </div>}
+            </div>
+          </>}
           <div className="form-grid" style={{ marginTop: mode === "signup" ? 13 : 0 }}>
             <div className="field full"><label htmlFor="email">Email</label><input id="email" className="field-input" type="email" autoComplete="email" required value={mode === "login" ? email : signup.email} onChange={(event) => mode === "login" ? setEmail(event.target.value) : setSignup({ ...signup, email: event.target.value })} /></div>
             <div className="field full"><label htmlFor="password">Password</label><input id="password" className="field-input" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={6} required value={mode === "login" ? password : signup.password} onChange={(event) => mode === "login" ? setPassword(event.target.value) : setSignup({ ...signup, password: event.target.value })} /></div>
@@ -266,7 +269,7 @@ export default function AdminPage() {
 
   return (
     <>
-      <header className="site-header"><Link className="brand-link" href="/" aria-label="Public register"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority /></Link><div className="admin-top-actions"><span className="header-note">{user.displayName || user.email}</span><button className="header-link" type="button" onClick={() => void signOut(auth)}><LogOut size={15} />Sign out</button></div></header>
+      <header className="site-header compact-header"><Link className="brand-link" href="/" aria-label="Public register"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link><div className="admin-top-actions"><span className="header-note">{user.displayName || user.email}</span><button className="header-link" type="button" onClick={() => void signOut(auth)}><LogOut size={15} />Sign out</button></div></header>
       <main className="page-shell">
         <section className="page-intro"><div><p className="eyebrow">Admin workspace</p><h1 className="page-title">Travel order records</h1><p className="page-subtitle">Create, update, and maintain the published register.</p></div><div className="intro-meta"><span className="status-dot" />Verified account</div></section>
         <div className="admin-toolbar"><span className="intro-meta">Changes publish to the public register</span><button className="button-primary" type="button" onClick={startCreate}><Plus size={17} />New travel order</button></div>
