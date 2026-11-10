@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import AccessCodeGate from "@/components/AccessCodeGate";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><AccessCodeGate>{children}</AccessCodeGate></body>
     </html>
   );
 }
