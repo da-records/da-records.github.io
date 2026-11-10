@@ -142,3 +142,22 @@ export function formatTravelDates(dateFrom: string, dateTo: string) {
   if (from.year === to.year) return `${SHORT_MONTHS[from.month - 1]} ${from.day} - ${SHORT_MONTHS[to.month - 1]} ${to.day}, ${to.year}`;
   return `${formatShortDate(from)} - ${formatShortDate(to)}`;
 }
+
+export function matchesTravelOrderSearch(record: TravelOrder, searchTerm: string) {
+  const terms = searchTerm.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+
+  const searchableText = [
+    record.travelNo,
+    record.personnel,
+    record.office,
+    record.destination,
+    record.toDate,
+    formatDate(record.toDate),
+    record.dateFrom,
+    record.dateTo,
+    formatTravelDates(record.dateFrom, record.dateTo),
+  ].join(" ").toLowerCase();
+
+  return terms.every((term) => searchableText.includes(term));
+}
