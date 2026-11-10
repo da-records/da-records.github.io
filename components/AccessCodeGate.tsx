@@ -1,16 +1,34 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { KeyRound, LockKeyhole } from "lucide-react";
 
 const ACCESS_CODE = "caraga";
 const ACCESS_SESSION_KEY = "da-records-access-granted";
+const AccessCodeLogoutContext = createContext<(() => void) | null>(null);
+
+export function useAccessCodeLogout() {
+  const logout = useContext(AccessCodeLogoutContext);
+  if (!logout) throw new Error("useAccessCodeLogout must be used inside AccessCodeGate.");
+  return logout;
+}
 
 export default function AccessCodeGate({ children }: { children: ReactNode }) {
   const [accessReady, setAccessReady] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
+
+  const logout = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(ACCESS_SESSION_KEY);
+    } catch {
+      // The access gate still closes for this visit if storage is unavailable.
+    }
+    setCode("");
+    setError("");
+    setAccessGranted(false);
+  }, []);
 
   useEffect(() => {
     try {
@@ -37,7 +55,9 @@ export default function AccessCodeGate({ children }: { children: ReactNode }) {
     setAccessGranted(true);
   }
 
-  if (accessReady && accessGranted) return children;
+  if (accessReady && accessGranted) {
+    return <AccessCodeLogoutContext.Provider value={logout}>{children}</AccessCodeLogoutContext.Provider>;
+  }
 
   return (
     <div className="access-code-backdrop">

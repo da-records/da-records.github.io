@@ -4,7 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, LogOut } from "lucide-react";
+import { useAccessCodeLogout } from "@/components/AccessCodeGate";
 import LoadingProgress from "@/components/LoadingProgress";
 import { db, initializeAnalytics } from "@/lib/firebase";
 import { formatDate, OFFICES, orderFromDocument, type TravelOrder } from "@/lib/records";
@@ -12,6 +13,7 @@ import { formatDate, OFFICES, orderFromDocument, type TravelOrder } from "@/lib/
 const PAGE_SIZE = 10;
 
 export default function PublicRecords() {
+  const logoutAccess = useAccessCodeLogout();
   const [records, setRecords] = useState<TravelOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [office, setOffice] = useState("all");
@@ -52,6 +54,7 @@ export default function PublicRecords() {
       <LoadingProgress loading={loading} />
       <header className="site-header compact-header">
         <Link className="brand-link" href="/" aria-label="Travel Order Records home"><Image className="brand-logo" src="/tor_logo_white.png" alt="Travel Order Records" width={490} height={180} priority draggable={false} /></Link>
+        <button className="header-link" type="button" title="Log out of records" aria-label="Log out of records" onClick={logoutAccess}><LogOut size={15} />Log out</button>
       </header>
       <main className="page-shell">
         <section className="page-intro"><div><p className="eyebrow">Department of Agriculture</p><h1 className="page-title">Travel order records</h1><p className="page-subtitle">Browse published travel orders by office and travel date.</p></div><div className="intro-meta"><span className="status-dot" />Live public register</div></section>
