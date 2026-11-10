@@ -5,9 +5,13 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.email_verified == true;
     }
 
+    function validTravelDate(value) {
+      return value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
     function validRecord(data) {
       return data.keys().hasAll(['type', 'office', 'travelNo', 'personnel', 'destination', 'dateFrom', 'dateTo', 'createdAt', 'updatedAt'])
-        && data.keys().hasOnly(['type', 'office', 'travelNo', 'personnel', 'destination', 'dateFrom', 'dateTo', 'groupId', 'groupSize', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['type', 'office', 'travelNo', 'personnel', 'destination', 'toDate', 'dateFrom', 'dateTo', 'groupId', 'groupSize', 'createdAt', 'updatedAt'])
         && data.type in ['individual', 'group']
         && ((data.type == 'individual' && !data.keys().hasAny(['groupId', 'groupSize']))
           || (data.type == 'group' && data.keys().hasAll(['groupId', 'groupSize']) && data.groupId is string && data.groupId.size() > 0 && data.groupSize is int && data.groupSize >= 2 && data.groupSize <= 100))
@@ -15,14 +19,18 @@ service cloud.firestore {
         && data.travelNo is string && data.travelNo.matches('^[0-9]{4}-[0-9]{4}$')
         && data.personnel is string && data.personnel.size() > 0 && data.personnel.size() <= 140
         && data.destination is string && data.destination.size() > 0 && data.destination.size() <= 180
-        && data.dateFrom is string && data.dateFrom.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && data.dateTo is string && data.dateTo.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && (!data.keys().hasAny(['toDate']) || validTravelDate(data.toDate))
+        && validTravelDate(data.dateFrom)
+        && validTravelDate(data.dateTo)
         && data.createdAt is timestamp && data.updatedAt is timestamp;
     }
 
     match /travelOrders/{recordId} {
       allow read: if true;
-      allow create: if verifiedAccount() && validRecord(request.resource.data);
+      allow create: if verifiedAccount()
+        && validRecord(request.resource.data)
+        && request.resource.data.keys().hasAll(['toDate'])
+        && validTravelDate(request.resource.data.toDate);
       allow update: if verifiedAccount()
         && validRecord(request.resource.data)
         && request.resource.data.travelNo == resource.data.travelNo

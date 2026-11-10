@@ -12,6 +12,7 @@ export interface TravelOrder {
   travelNo: string;
   personnel: string;
   destination: string;
+  toDate: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -25,12 +26,13 @@ export interface TravelOrderDraft {
   type: "individual" | "group";
   people: TravelOrderPerson[];
   destination: string;
+  toDate: string;
   dateFrom: string;
   dateTo: string;
 }
 
 export function orderFromDocument(id: string, value: Record<string, unknown>): TravelOrder {
-  return { id, type: value.type === "group" ? "group" : "individual", office: String(value.office ?? ""), travelNo: String(value.travelNo ?? ""), personnel: String(value.personnel ?? ""), destination: String(value.destination ?? ""), dateFrom: String(value.dateFrom ?? ""), dateTo: String(value.dateTo ?? "") };
+  return { id, type: value.type === "group" ? "group" : "individual", office: String(value.office ?? ""), travelNo: String(value.travelNo ?? ""), personnel: String(value.personnel ?? ""), destination: String(value.destination ?? ""), toDate: String(value.toDate ?? ""), dateFrom: String(value.dateFrom ?? ""), dateTo: String(value.dateTo ?? "") };
 }
 
 function currentTravelPeriod() {
@@ -79,6 +81,7 @@ export async function createTravelOrders(draft: TravelOrderDraft) {
         office: person.office,
         personnel: person.personnel.trim(),
         destination: draft.destination.trim(),
+        toDate: draft.toDate,
         dateFrom: draft.dateFrom,
         dateTo: draft.dateTo,
         travelNo: travelNumbers[index],

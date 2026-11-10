@@ -137,7 +137,8 @@ a { color: inherit; text-decoration: none; }
 .button-danger:disabled { opacity: .65; cursor: wait; }
 .form-hint { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .spinner { animation: spin 850ms linear infinite; }
-.type-field { min-width: 0; border: 0; margin: 0 0 17px; padding: 0; }
+.type-date-row { align-items: end; margin-bottom: 17px; }
+.type-field { min-width: 0; border: 0; margin: 0; padding: 0; }
 .type-field legend { margin-bottom: 8px; }
 .record-type-options { display: flex; gap: 9px; }
 .record-type-option { min-width: 132px; min-height: 42px; display: flex; align-items: center; gap: 9px; border: 1px solid #e4d9d1; border-radius: 8px; padding: 0 12px; color: #655b53; background: #fff; cursor: pointer; font-size: 12px; font-weight: 800; }
