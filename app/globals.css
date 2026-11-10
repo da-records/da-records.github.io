@@ -44,6 +44,7 @@ a { color: inherit; text-decoration: none; }
 .personnel-cell { min-width: 155px; font-weight: 800; }
 .destination-cell { min-width: 180px; max-width: 280px; color: #564f49; line-height: 1.4; }
 .date-cell { min-width: 124px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 12px; }
+.travel-dates-cell { min-width: 190px; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 12px; }
 .table-state { padding: 54px 18px !important; color: var(--muted); text-align: center; }
 .table-state strong, .table-state span { display: block; }
 .table-state strong { margin-bottom: 5px; color: var(--ink); }

@@ -109,3 +109,36 @@ export function formatDate(value: string) {
   const date = new Date(`${value}T12:00:00`);
   return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("en-PH", { month: "short", day: "2-digit", year: "numeric" }).format(date);
 }
+
+const SHORT_MONTHS = ["Jan.", "Feb.", "Mar.", "Apr.", "May", "Jun.", "Jul.", "Aug.", "Sep.", "Oct.", "Nov.", "Dec."];
+
+function parseISODate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
+  return { year, month, day };
+}
+
+function formatShortDate(date: { year: number; month: number; day: number }) {
+  return `${SHORT_MONTHS[date.month - 1]} ${date.day}, ${date.year}`;
+}
+
+export function formatTravelDates(dateFrom: string, dateTo: string) {
+  const from = parseISODate(dateFrom);
+  const to = parseISODate(dateTo);
+  if (!from || !to) {
+    if (!dateFrom && !dateTo) return "-";
+    if (!dateFrom) return formatDate(dateTo);
+    if (!dateTo) return formatDate(dateFrom);
+    return `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
+  }
+
+  if (from.year === to.year && from.month === to.month && from.day === to.day) return formatShortDate(from);
+  if (from.year === to.year && from.month === to.month) return `${SHORT_MONTHS[from.month - 1]} ${from.day}-${to.day}, ${to.year}`;
+  if (from.year === to.year) return `${SHORT_MONTHS[from.month - 1]} ${from.day} - ${SHORT_MONTHS[to.month - 1]} ${to.day}, ${to.year}`;
+  return `${formatShortDate(from)} - ${formatShortDate(to)}`;
+}
